@@ -5,6 +5,7 @@ color_green="\[$(/usr/bin/tput setaf 2)\]"
 color_cyan="\[$(/usr/bin/tput setaf 45)\]"
 color_white="\[$(/usr/bin/tput setaf 7)\]"
 color_host="\[$(/usr/bin/tput setaf 3)\]"
+color_gray="\[$(/usr/bin/tput setaf 8)\]"
 color_off="\[$(/usr/bin/tput sgr0)\]"
 color_error="$(/usr/bin/tput setab 1)$(/usr/bin/tput setaf 7)"
 color_error_off="$(/usr/bin/tput sgr0)"
@@ -16,6 +17,7 @@ esac
 
 # detected if git installed
 GIT_ENV_DEF=$(which git 2>/dev/null)
+
 function update_prompt {
 	local CONDA_ENV=
 	local CURRENT_DIR=$PWD
@@ -30,8 +32,8 @@ function update_prompt {
 		CURRENT_DIR="~${PWD:${#HOME}}"
 	fi
 
-	# virtual environment
-	[[ ! -z $CONDA_DEFAULT_ENV ]] && CONDA_ENV=" (env: ${color_cyan}${CONDA_DEFAULT_ENV#$WORKON_HOME}${color_off})"
+	# virtual environment (anaconda)
+	[[ ! -z $CONDA_DEFAULT_ENV ]] && CONDA_ENV=" (env: ${CONDA_DEFAULT_ENV#$WORKON_HOME})"
 
 	# git environment
 	if [[ ! -z $GIT_ENV_DEF ]]; then
@@ -48,17 +50,33 @@ function update_prompt {
 			fi
 		fi
 	fi
+	[[ ! -z $GIT_BRANCH ]] && GIT_ENV=" (git: ${GIT_BRANCH})"
 
+	# prompt length
+	local P_LENGTH=$((${#USER}+${#HOSTNAME}+${#CURRENT_DIR}+${#CONDA_ENV}+${#GIT_ENV}+3))
+	local L_FILL=
+
+	if [[ $P_LENGTH -gt $COLUMNS ]]; then
+		CURRENT_DIR="...${CURRENT_DIR:$(($P_LENGTH-$COLUMNS+3))}"
+	else
+		local FILL_SIZE=$(($COLUMNS-$P_LENGTH))
+		L_FILL=$color_gray
+		while [[ $FILL_SIZE -gt 0 ]]; do L_FILL="${L_FILL}─"; FILL_SIZE=$(($FILL_SIZE-1)); done
+		L_FILL="${L_FILL}${color_off}"
+	fi
+
+	# colorize environments
 	if [[ ! -z $GIT_BRANCH ]]; then
-			if [[ -z $GIT_DIRTY ]]; then
-				GIT_ENV=" (git: ${color_green}${GIT_BRANCH}${color_off})"
-			else
-				GIT_ENV=" (git: ${color_red}${GIT_BRANCH}${color_off})"
-			fi
+		if [[ -z $GIT_DIRTY ]]; then
+			GIT_ENV=" (git: ${color_green}${GIT_BRANCH}${color_off})"
+		else
+			GIT_ENV=" (git: ${color_red}${GIT_BRANCH}${color_off})"
 		fi
+	fi
+	[[ ! -z $CONDA_DEFAULT_ENV ]] && CONDA_ENV=" (env: ${color_cyan}${CONDA_DEFAULT_ENV#$WORKON_HOME}${color_off})"
 
 	# prompt line
-	PS1="\e[1m${color_user}${USER}${color_off}\e[1m@${color_host}${HOSTNAME}${color_off}:${color_white}${CURRENT_DIR}${color_off}\e[1m${CONDA_ENV}\e[1m${GIT_ENV}\n➜ ${color_off}"
+	PS1="\e[1m${color_user}${USER}${color_off}\e[1m@${color_host}${HOSTNAME}${color_off}:${color_white}${CURRENT_DIR}${color_off}\e[1m${CONDA_ENV}\e[1m${GIT_ENV} ${L_FILL}\n➜ ${color_off}"
 	echo -en "\e[6n" && read -sdR CURPOS
 	[[ ${CURPOS##*;} -gt 1 ]] && echo "${color_error}↵${color_error_off}"
 
