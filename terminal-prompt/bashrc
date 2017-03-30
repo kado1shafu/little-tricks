@@ -13,9 +13,15 @@ case `id -u` in
 	0) color_user=$color_red ;;
 	*) color_user=$color_green ;;
 esac
+
+# detected if git installed
+GIT_ENV_DEF=$(which git 2>/dev/null)
 function update_prompt {
 	local CONDA_ENV=
 	local CURRENT_DIR=$PWD
+	local GIT_ENV=
+	local GIT_BRANCH=
+	local GIT_DIRTY=
 
 	# current directory
 	if [[ "${HOME}" == "${PWD}" ]]; then
@@ -27,8 +33,32 @@ function update_prompt {
 	# virtual environment
 	[[ ! -z $CONDA_DEFAULT_ENV ]] && CONDA_ENV=" (env: ${color_cyan}${CONDA_DEFAULT_ENV#$WORKON_HOME}${color_off})"
 
+	# git environment
+	if [[ ! -z $GIT_ENV_DEF ]]; then
+		local LOCAL_DIR=$PWD
+		while [[ ! -d "${LOCAL_DIR}/.git" ]] && [[ ! "${LOCAL_DIR}" == "/" ]] && [[ ! "${LOCAL_DIR}" == "~" ]] && [[ ! "${LOCAL_DIR}" == "" ]]; do LOCAL_DIR=${LOCAL_DIR%/*}; done
+		if [[ -d "${LOCAL_DIR}/.git" ]]; then
+			if [[ "${LOCAL_DIR}" != "${HOME}" ]] || [[ "${PWD}" == "${HOME}" ]]; then
+				GIT_BRANCH=$($GIT_ENV_DEF symbolic-ref HEAD 2>/dev/null)
+				if [[ ! -z $GIT_BRANCH ]]; then
+					GIT_BRANCH=${GIT_BRANCH#refs/heads/}
+					local GIT_STATUS=$($GIT_ENV_DEF status --porcelain 2>/dev/null)
+					[[ -n $GIT_STATUS ]] && GIT_DIRTY=1
+				fi
+			fi
+		fi
+	fi
+
+	if [[ ! -z $GIT_BRANCH ]]; then
+			if [[ -z $GIT_DIRTY ]]; then
+				GIT_ENV=" (git: ${color_green}${GIT_BRANCH}${color_off})"
+			else
+				GIT_ENV=" (git: ${color_red}${GIT_BRANCH}${color_off})"
+			fi
+		fi
+
 	# prompt line
-	PS1="\e[1m${color_user}${USER}${color_off}\e[1m@${color_host}${HOSTNAME}${color_off}:${color_white}${CURRENT_DIR}${color_off}\e[1m${CONDA_ENV}\n➜ ${color_off}"
+	PS1="\e[1m${color_user}${USER}${color_off}\e[1m@${color_host}${HOSTNAME}${color_off}:${color_white}${CURRENT_DIR}${color_off}\e[1m${CONDA_ENV}\e[1m${GIT_ENV}\n➜ ${color_off}"
 	echo -en "\e[6n" && read -sdR CURPOS
 	[[ ${CURPOS##*;} -gt 1 ]] && echo "${color_error}↵${color_error_off}"
 
