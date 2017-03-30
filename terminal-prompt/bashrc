@@ -1,0 +1,38 @@
+# customize terminal
+
+color_red="\[$(/usr/bin/tput setaf 1)\]"
+color_green="\[$(/usr/bin/tput setaf 2)\]"
+color_cyan="\[$(/usr/bin/tput setaf 45)\]"
+color_white="\[$(/usr/bin/tput setaf 7)\]"
+color_host="\[$(/usr/bin/tput setaf 3)\]"
+color_off="\[$(/usr/bin/tput sgr0)\]"
+color_error="$(/usr/bin/tput setab 1)$(/usr/bin/tput setaf 7)"
+color_error_off="$(/usr/bin/tput sgr0)"
+
+case `id -u` in
+	0) color_user=$color_red ;;
+	*) color_user=$color_green ;;
+esac
+function update_prompt {
+	local CONDA_ENV=
+	local CURRENT_DIR=$PWD
+
+	# current directory
+	if [[ "${HOME}" == "${PWD}" ]]; then
+		CURRENT_DIR="~"
+	elif [[ "${HOME}" == "${PWD:0:${#HOME}}" ]]; then
+		CURRENT_DIR="~${PWD:${#HOME}}"
+	fi
+
+	# virtual environment
+	[[ ! -z $CONDA_DEFAULT_ENV ]] && CONDA_ENV=" (env: ${color_cyan}${CONDA_DEFAULT_ENV#$WORKON_HOME}${color_off})"
+
+	# prompt line
+	PS1="\e[1m${color_user}${USER}${color_off}\e[1m@${color_host}${HOSTNAME}${color_off}:${color_white}${CURRENT_DIR}${color_off}\e[1m${CONDA_ENV}\n➜ ${color_off}"
+	echo -en "\e[6n" && read -sdR CURPOS
+	[[ ${CURPOS##*;} -gt 1 ]] && echo "${color_error}↵${color_error_off}"
+
+	echo -ne "\e]0;${USER}@${HOSTNAME}:${CURRENT_DIR}"; echo -ne "\007"
+}
+
+PROMPT_COMMAND=update_prompt
