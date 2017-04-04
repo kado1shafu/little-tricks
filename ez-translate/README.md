@@ -2,9 +2,9 @@
 It uses Google translator for translation. 
 
 ### Installation
-
+[Xsel](https://github.com/kfish/xsel) is a command-line program for getting and setting the contents of the X selection.
 ```sh
-$ sudo apt install [xsel](https://apps.ubuntu.com/cat/applications/xsel/)
+$ sudo apt install xsel
 $ chmod -v 755 ez-trnslt
 $ sudo mv ez-trnslt /usr/bin/
 ```
