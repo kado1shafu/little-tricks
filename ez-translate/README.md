@@ -6,7 +6,7 @@ It uses Google translator for translation.
 ```sh
 $ sudo apt install xsel
 $ chmod -v 755 ez-trnslt
-$ sudo mv ez-trnslt /usr/bin/
+$ mv ez-trnslt /usr/local/bin/
 ```
 Go to System settings -> Keyboard -> Key Combinations -> Additional
 
